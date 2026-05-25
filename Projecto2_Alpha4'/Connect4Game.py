@@ -6,7 +6,6 @@ from HumanPlayer import HumanPlayer
 from RandomPlayer import RandomAIPlayer
 
 
-
 # =========================
 # GAME LOOP
 # =========================
@@ -41,7 +40,7 @@ class Connect4Game:
 
                 if board.check_winner(current_player.piece):
                     if(not headless):
-                       gui.update_winner(current_player)
+                        gui.update_winner(current_player)
                     else:
                         print(f"Player {current_player.piece} wins!")
 
@@ -51,7 +50,7 @@ class Connect4Game:
                 elif board.is_board_full():
                     if (not headless):
                         gui.draw_game()
-                    print("Drwa!!!!")
+                    print("Draw!!!!")
                     game_over = True
                     winner = 0
 
@@ -76,12 +75,43 @@ class Connect4Game:
 if __name__ == "__main__":
     from MinimaxPlayer import MinimaxAIPlayer
     from MCTSPlayer import MCTSAIPlayer
+    import time
 
-    p1 = MinimaxAIPlayer(piece=1, max_depth=5)
-    p2 = MCTSAIPlayer(piece=2, max_iterations=500)
     game = Connect4Game()
-    winner = game.run_game(p1, p2, headless=False)
-    if winner == 0:
-        print("Draw!")
-    else:
-        print(f"Winner is player {winner}")
+
+    def run_n_games(p1_factory, p2_factory, n=10):
+        w1 = w2 = draws = 0
+        durations = []
+        for i in range(n):
+            p1 = p1_factory()
+            p2 = p2_factory()
+            t = time.time()
+            winner = game.run_game(p1, p2, headless=True)
+            durations.append(time.time() - t)
+            if winner == 1: w1 += 1
+            elif winner == 2: w2 += 1
+            else: draws += 1
+            print(f"  Jogo {i+1}: vencedor = {winner}")
+        avg = sum(durations) / len(durations)
+        print(f"  W1={w1} W2={w2} Empates={draws}")
+        print(f"  Duração média={avg:.2f}s  max={max(durations):.2f}s  min={min(durations):.2f}s")
+
+    print("=== Minimax vs Aleatório ===")
+    run_n_games(lambda: MinimaxAIPlayer(piece=1, max_depth=3),
+                lambda: RandomAIPlayer(piece=2))
+
+    print("\n=== MCTS vs Aleatório ===")
+    run_n_games(lambda: MCTSAIPlayer(piece=1, max_iterations=300),
+                lambda: RandomAIPlayer(piece=2))
+
+    print("\n=== COMB1: Minimax(2) vs MCTS(2000) ===")
+    run_n_games(lambda: MinimaxAIPlayer(piece=1, max_depth=2),
+                lambda: MCTSAIPlayer(piece=2, max_iterations=2000))
+
+    print("\n=== COMB2: Minimax(3) vs MCTS(500) ===")
+    run_n_games(lambda: MinimaxAIPlayer(piece=1, max_depth=3),
+                lambda: MCTSAIPlayer(piece=2, max_iterations=500))
+
+    print("\n=== COMB3: Minimax(5) vs MCTS(150) ===")
+    run_n_games(lambda: MinimaxAIPlayer(piece=1, max_depth=5),
+                lambda: MCTSAIPlayer(piece=2, max_iterations=150))
